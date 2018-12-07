@@ -1,0 +1,49 @@
+AWSTemplateFormatVersion: '2010-09-09'
+# In order to include objects defined by AWS SAM within a CloudFormation template, 
+#     the template must include a Transform section in the document root with a value of AWS::Serverless-2016-10-31
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  Populates DynamoDB from the uploaded CSVs in S3 bucket.
+
+# More info about Globals: https://github.com/awslabs/serverless-application-model/blob/master/docs/globals.rst
+Globals:
+  Function:
+    Timeout: 5
+
+Resources:
+  S3FileUploadEventSampleFunction:
+    Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+    Properties:
+      # folder name
+      CodeUri: populate-to-dynamodb/
+      # packaged binary filename
+      Handler: populate-to-dynamodb
+      Runtime: go1.x
+      Tracing: Active # https://docs.aws.amazon.com/lambda/latest/dg/lambda-x-ray.html
+      Events:
+        CSVUpload:
+          Type: S3
+          Properties:
+            Bucket: !Ref Bucket
+            # "*"" includes all methods PUT, POST, and COPY 
+            Events: s3:ObjectCreated:*
+      Environment: # More info about Env Vars: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#environment-object
+        Variables:
+          CREATED_BY: Nirdosh
+          TABLE_NAME: Workers-beta
+
+  Bucket: 
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: populate-data-csv 
+
+
+Outputs:
+  S3FileUploadEventSampleFunction:
+    Description: "First Lambda Function ARN"
+    Value: !GetAtt S3FileUploadEventSampleFunction.Arn
+
+  S3FileUploadEventSampleFunctionIamRole:
+    Description: "Implicit IAM Role created for S3FileUploadEventSampleFunction function"
+    Value: !GetAtt S3FileUploadEventSampleFunctionRole.Arn
+
